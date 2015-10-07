@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 2.4)
+
+find_package(Adbo)
+
+INCLUDE_DIRECTORIES( ${ENTC_INCLUDE_DIRS} ${Q5_INCLUDE_DIRS} ${ADBO_INCLUDE_DIRS} )
+
+ADD_LIBRARY( q5game_engine SHARED q5game_engine.c)
+TARGET_LINK_LIBRARIES( q5game_engine ${ENTC_LIBRARIES} ${Q5_LIBRARY_CORE} ${ADBO_LIBRARIES})
