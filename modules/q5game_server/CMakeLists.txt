@@ -17,7 +17,11 @@ TARGET_LINK_LIBRARIES( q5game_server ${ENTC_LIBRARIES} ${Q5_LIBRARY_CORE} )
 
 find_package(Curses)
 
-include_directories(${CURSES_INCLUDE_DIR})
+IF( CURSES_INCLUDE_DIR )
 
-ADD_EXECUTABLE( q5game_client q5game_client.cpp )
-TARGET_LINK_LIBRARIES( q5game_client ${ENTC_LIBRARIES} ${CURSES_LIBRARIES}) 
+  include_directories(${CURSES_INCLUDE_DIR})
+
+  ADD_EXECUTABLE( q5game_client q5game_client.cpp )
+  TARGET_LINK_LIBRARIES( q5game_client ${ENTC_LIBRARIES} ${CURSES_LIBRARIES}) 
+
+ENDIF( CURSES_INCLUDE_DIR )
