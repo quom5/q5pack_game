@@ -1,0 +1,12 @@
+#!/bin/bash
+
+VERSION=Debug
+
+INSTALLDIR="/opt/quom-5.1.0"
+mkdir $INSTALLDIR
+
+MODULESDIR=$INSTALLDIR"/modules"
+mkdir $MODULESDIR
+
+cp $PWD/modules/q5game_server/$VERSION/libq5game_server.dylib $MODULESDIR
+install_name_tool -id $MODULESDIR/libq5game_server.dylib $MODULESDIR/libq5game_server.dylib
