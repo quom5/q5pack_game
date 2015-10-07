@@ -16,6 +16,8 @@ __LIB_EXPORT void gs_realm_destroy (GameServerRealm*);
 
 __LIB_EXPORT EcAsyncUdpContext gs_realm_newContext (GameServerRealm);
 
+__LIB_EXPORT void gs_realm_removePlayer (GameServerRealm, GameServerPlayer);
+
 __LIB_EXPORT void gs_realm_broadcast (GameServerRealm, EcAsyncUdpContext ctx, const EcString command, EcUdc node);
 
 __LIB_EXPORT void gs_realm_sendPlayers (GameServerRealm, EcDatagram, GameServerPlayer);

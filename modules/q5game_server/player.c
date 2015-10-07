@@ -39,6 +39,19 @@ GameServerPlayer gs_player_create (GameServerRealm realm)
 
 //-------------------------------------------------------------------------------------------
 
+void gs_player_destroy (GameServerPlayer* pself)
+{
+  GameServerPlayer self = *pself;
+  
+  gs_realm_removePlayer (self->realm, self);
+  
+  ecstr_delete(&(self->playerName));
+  
+  ENTC_DEL (pself, struct GameServerPlayer_s);
+}
+
+//-------------------------------------------------------------------------------------------
+
 void gs_player_ping (GameServerPlayer self)
 {
   eclogger_fmt (LL_TRACE, "GCTX", "recv", "ping [%s]", self->playerName);

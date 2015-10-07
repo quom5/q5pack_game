@@ -17,8 +17,7 @@ int prot_context_basic_commands (GameServerPlayer player, EcAsyncUdpContext ctx,
     break;
     case '1':  // player disconnect
     {
-      gs_player_disconnect (player, ctx);
-      return FALSE;
+      return FALSE;  // this will destroy the context
     }
     case '2':  // player connected
     {
@@ -86,8 +85,14 @@ int _STDCALL prot_context_onRecv (void* ptr, EcAsyncUdpContext ctx, EcDatagram d
 
 void _STDCALL prot_context_onDestroy (void** ptr)
 {
+  GameServerPlayer player = *ptr;
+  
+  // broadcast to other player this one is now gone away
+  gs_player_disconnect (player, NULL);
+  
+  gs_player_destroy (&player);
+  
   eclogger_fmt (LL_TRACE, "GCTX", "create", "client context destroyed");
-
 }
 
 //-------------------------------------------------------------------------------------------
@@ -96,7 +101,7 @@ EcAsyncUdpContext prot_context_create (GameServerPlayer player)
 {
   eclogger_fmt (LL_TRACE, "GCTX", "create", "new client context created");
 
-  return ecasync_udpcontext_create (30000, prot_context_onRecv, prot_context_onDestroy, player);
+  return ecasync_udpcontext_create (60000, prot_context_onRecv, prot_context_onDestroy, player);
 }
 
 //-------------------------------------------------------------------------------------------

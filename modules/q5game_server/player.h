@@ -10,6 +10,8 @@ __CPP_EXTERN____________________________________________________________________
 
 __LIB_EXPORT GameServerPlayer gs_player_create (GameServerRealm);
 
+__LIB_EXPORT void gs_player_destroy (GameServerPlayer*);
+
 __LIB_EXPORT void gs_player_ping (GameServerPlayer);
 
 __LIB_EXPORT void gs_player_connect (GameServerPlayer, EcAsyncUdpContext ctx, const unsigned char* buffer, ulong_t len);
