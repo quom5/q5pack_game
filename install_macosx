@@ -10,3 +10,6 @@ mkdir $MODULESDIR
 
 cp $PWD/modules/q5game_server/$VERSION/libq5game_server.dylib $MODULESDIR
 install_name_tool -id $MODULESDIR/libq5game_server.dylib $MODULESDIR/libq5game_server.dylib
+
+cp $PWD/modules/q5game_engine/$VERSION/libq5game_engine.dylib $MODULESDIR
+install_name_tool -id $MODULESDIR/libq5game_engine.dylib $MODULESDIR/libq5game_engine.dylib

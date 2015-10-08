@@ -10,7 +10,7 @@ struct GameServerRealm_s; typedef struct GameServerRealm_s* GameServerRealm;
 
 __CPP_EXTERN______________________________________________________________________________START
 
-__LIB_EXPORT GameServerRealm gs_realm_create (EcAsynUdpDispatcher dispatcher);
+__LIB_EXPORT GameServerRealm gs_realm_create (EcAsynUdpDispatcher dispatcher, uint32_t gameEngineSrvNo);
 
 __LIB_EXPORT void gs_realm_destroy (GameServerRealm*);
 

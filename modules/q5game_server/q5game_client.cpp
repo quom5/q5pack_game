@@ -288,6 +288,7 @@ namespace {
         if (i != m_players.end())
         {
           i->second->wipe ();
+          refresh (); 
         }
       }
     }
@@ -351,7 +352,7 @@ int main (int argc, char *argv[])
   
   EcSocket socket = ecsocket_new (ec, ENTC_SOCKET_PROTOCOL_UDP);
   
-  if (ecsocket_connect(socket, "10.1.1.14", 44000))
+  if (ecsocket_connect(socket, "127.0.0.1", 44000))
   {
     mvaddstr(0, 1, "OK");
     refresh();

@@ -8,6 +8,10 @@
 #include <types/ecudc.h>
 #include <system/ecmutex.h>
 
+#define GAME_ENGINE_PLAYER_NEW 10001
+#define GAME_ENGINE_PLAYER_DEL 10002
+#define GAME_ENGINE_PLAYER_POS 10003
+
 struct GameServerRealm_s
 {
   
@@ -17,11 +21,13 @@ struct GameServerRealm_s
   
   EcMutex mutex;
   
+  uint32_t gameEngineSrvNo;
+  
 };
 
 //-------------------------------------------------------------------------------------
 
-GameServerRealm gs_realm_create (EcAsynUdpDispatcher dispatcher)
+GameServerRealm gs_realm_create (EcAsynUdpDispatcher dispatcher, uint32_t gameEngineSrvNo)
 {
   GameServerRealm self = ENTC_NEW (struct GameServerRealm_s);
   
@@ -29,6 +35,8 @@ GameServerRealm gs_realm_create (EcAsynUdpDispatcher dispatcher)
   self->players = eclist_new ();
   
   self->mutex = ecmutex_new ();
+  
+  self->gameEngineSrvNo = gameEngineSrvNo;
   
   return self;
 }
