@@ -4,6 +4,7 @@
 */
 #define ENET_BUILDING_LIB 1
 #include <string.h>
+#include <stdio.h>
 #include "enet/enet.h"
 
 /** @defgroup host ENet host functions
@@ -35,8 +36,7 @@ enet_host_create (const ENetAddress * address, size_t peerCount, size_t channelL
       return NULL;
 
     host = (ENetHost *) enet_malloc (sizeof (ENetHost));
-    if (host == NULL)
-      return NULL;
+	if (host == NULL) { printf("host == NULL\n");      return NULL;}
     memset (host, 0, sizeof (ENetHost));
 
     host -> peers = (ENetPeer *) enet_malloc (peerCount * sizeof (ENetPeer));
@@ -44,13 +44,18 @@ enet_host_create (const ENetAddress * address, size_t peerCount, size_t channelL
     {
        enet_free (host);
 
-       return NULL;
+       printf("host -> peers == NULL failed\n");      
+	   return NULL;
     }
     memset (host -> peers, 0, peerCount * sizeof (ENetPeer));
 
     host -> socket = enet_socket_create (ENET_SOCKET_TYPE_DATAGRAM);
     if (host -> socket == ENET_SOCKET_NULL || (address != NULL && enet_socket_bind (host -> socket, address) < 0))
     {
+	   if (host -> socket == ENET_SOCKET_NULL) printf("host -> socket == ENET_SOCKET_NULL\n");   
+	   if( (address != NULL && enet_socket_bind (host -> socket, address) < 0))
+		  printf("(address != NULL && enet_socket_bind (host -> socket, address) < 0)\n");   
+
        if (host -> socket != ENET_SOCKET_NULL)
          enet_socket_destroy (host -> socket);
 
@@ -133,13 +138,6 @@ enet_host_create (const ENetAddress * address, size_t peerCount, size_t channelL
 
     return host;
 }
-
-int
-enet_host_socket (ENetHost * host)
-{
-  return host -> socket;
-}
-
 
 /** Destroys the host and all resources associated with it.
     @param host pointer to the host to destroy

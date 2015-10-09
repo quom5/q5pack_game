@@ -15,7 +15,7 @@
 struct GameServerRealm_s
 {
   
-  EcAsynUdpDispatcher dispatcher;
+  ENetHost* host;
   
   EcList players;
   
@@ -23,20 +23,24 @@ struct GameServerRealm_s
   
   uint32_t gameEngineSrvNo;
   
+  EcString name;
+  
 };
 
 //-------------------------------------------------------------------------------------
 
-GameServerRealm gs_realm_create (EcAsynUdpDispatcher dispatcher, uint32_t gameEngineSrvNo)
+GameServerRealm gs_realm_create (ENetHost* enetHost, uint32_t gameEngineSrvNo, const EcString name)
 {
   GameServerRealm self = ENTC_NEW (struct GameServerRealm_s);
   
-  self->dispatcher = dispatcher;
+  self->host = enetHost;
   self->players = eclist_new ();
   
   self->mutex = ecmutex_new ();
   
   self->gameEngineSrvNo = gameEngineSrvNo;
+  
+  self->name = ecstr_copy(name);
   
   return self;
 }
@@ -51,73 +55,45 @@ void gs_realm_destroy (GameServerRealm* pself)
   
   ecmutex_delete(&(self->mutex));
   
+  ecstr_delete(&(self->name));
+  
   ENTC_DEL (pself, struct GameServerRealm_s);
 }
 
 //-------------------------------------------------------------------------------------
 
-EcAsyncUdpContext gs_realm_newContext (GameServerRealm self)
+void gs_realm_broadcast (GameServerRealm self, const EcString command, EcUdc node, int reliable)
 {
-  GameServerPlayer player = gs_player_create (self);
-    
-  ecmutex_lock (self->mutex);
-  
-  eclist_append (self->players, player);
-  
-  ecmutex_unlock (self->mutex);
-
-  return prot_context_create (player);
-}
-
-//-------------------------------------------------------------------------------------
-
-void gs_realm_removePlayer (GameServerRealm self, GameServerPlayer player)
-{
-  ecmutex_lock (self->mutex);
-
-  eclist_remove(self->players, player);
-
-  ecmutex_unlock (self->mutex);
-}
-
-//-------------------------------------------------------------------------------------
-
-void gs_realm_broadcast (GameServerRealm self, EcAsyncUdpContext ctx, const EcString command, EcUdc node)
-{
-  EcString jsonText = ecjson_write(node);
-  
-  EcString commandText = ecstr_cat2(command, jsonText);
-  
-  EcBuffer buf = ecbuf_create_str (&commandText);
-  
-  ecasync_udpdisp_broadcast (self->dispatcher, buf, buf->size, ctx);
-  
-  ecbuf_destroy(&buf);
-  
-  ecstr_delete(&jsonText);  
-}
-
-//-------------------------------------------------------------------------------------
-
-void gs_realm_sendPlayers (GameServerRealm self, EcDatagram dg, GameServerPlayer extPlayer)
-{
-  EcListCursor cursor;
-  
-  ecmutex_lock (self->mutex);
-
-  eclist_cursor(self->players, &cursor);
-  
-  while (eclist_cnext(&cursor))
+  if (node)
   {
-    GameServerPlayer player = cursor.value;
+    EcString jsonText = ecjson_write(node);
     
-    if (player != extPlayer)
-    {
-      gs_player_sendInfo (player, dg);
-    }
+    EcString commandText = ecstr_cat2(command, jsonText);
+    
+    EcBuffer buf = ecbuf_create_str (&commandText);
+    
+    ENetPacket * packet = enet_packet_create (buf->buffer, buf->size, reliable ? ENET_PACKET_FLAG_RELIABLE : 0);
+    
+    enet_host_broadcast	(self->host, 0, packet);
+    
+    ecbuf_destroy(&buf);
+    
+    ecstr_delete(&jsonText);      
   }
-  
-  ecmutex_unlock (self->mutex);
+  else
+  {
+    ENetPacket * packet = enet_packet_create (command, 2, 0);
+    
+    enet_host_broadcast	(self->host, 0, packet);    
+  }
 }
 
 //-------------------------------------------------------------------------------------
+
+const EcString gs_realm_name (GameServerRealm self)
+{
+  return self->name;
+}
+
+//-------------------------------------------------------------------------------------
+

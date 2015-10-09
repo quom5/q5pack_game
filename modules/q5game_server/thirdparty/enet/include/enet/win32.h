@@ -2,6 +2,8 @@
  @file  win32.h
  @brief ENet Win32 header
 */
+#pragma comment(lib,"Ws2_32.lib")
+
 #ifndef __ENET_WIN32_H__
 #define __ENET_WIN32_H__
 
