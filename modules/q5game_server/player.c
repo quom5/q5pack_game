@@ -91,6 +91,7 @@ void gs_player_leaveRealm (GameServerPlayer self)
   gs_realm_broadcast (self->realm, "14", node, TRUE);  // inform other players
   
   self->realm = NULL;
+  self->spawned = FALSE;
 }
 
 //-------------------------------------------------------------------------------------------
@@ -200,9 +201,7 @@ void gs_player_joinRealm (GameServerPlayer self, ENetPeer* peer, const unsigned 
   ecudc_add_asUInt32(node, "Id", self->playerNo);
   ecudc_add_asString(node, "Name", self->name);
 
-  gs_player_send (self->peer, "03", node, TRUE);
-
-  gs_realm_broadcast (self->realm, "13", node, TRUE);  // inform other players
+  gs_realm_broadcast (self->realm, "13", node, TRUE);  // inform all
   
   ecudc_destroy(&node); 
   
@@ -374,6 +373,7 @@ void gs_player_sendInfo (GameServerPlayer self, GameServerRealm realm, ENetPeer*
     
     ecudc_add_asString(node, "Name", self->name);
     ecudc_add_asUInt32(node, "Id", self->playerNo);
+    ecudc_add_asUInt32(node, "Spawned", self->spawned ? 1 : 0);
     
     ecudc_add_asUInt32(node, "PosX", self->posX);
     ecudc_add_asUInt32(node, "PosY", self->posY);

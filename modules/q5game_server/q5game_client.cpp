@@ -24,10 +24,13 @@ namespace {
     
   public:
     
-    GamePlayer (const char* name, uint_t x, uint_t y)
-    : m_name (name), m_x (x), m_y (y)
-    , m_spawned (false)
+    GamePlayer (const char* name, int x, int y, bool spawned)
+    : m_name (name)
+    , m_x (x)
+    , m_y (y)
+    , m_spawned (spawned)
     {
+      setPosition (x, y);
     }
     
     void setPosition (uint_t x, uint_t y)
@@ -284,11 +287,6 @@ namespace {
                 setAuthenticated ((const char*)buf->buffer + 2);
               }
               break;
-              case '3': // enter realm
-              {
-                setRealm ();
-              }
-              break;
             }
           }
           break;
@@ -400,20 +398,31 @@ namespace {
 
         m_win = NULL;
       }
+      
+      m_players.clear ();
     }
     
     //------------------------------------------------------------------------------------------------
 
     void newPlayer (const char* buffer)
     {
-      if (m_win)
+      EcUdc node = ecjson_read(buffer, NULL);
+      
+      int id = ecudc_get_asUInt32(node, "Id", 0);
+      if (id == m_id)
       {
-        EcUdc node = ecjson_read(buffer, NULL);
-        
-        int id = ecudc_get_asUInt32(node, "Id", 0);
-        if (id > 0 && id != m_id)
-        {          
-          m_players [id] = new GamePlayer (ecudc_get_asString(node, "Name", "unknown"), 0, 0);
+        setRealm ();
+      }
+      else if (id > 0)
+      {          
+        if (m_win)
+        {
+          bool isSpawned = ecudc_get_asUInt32(node, "Spawned", 0) == 1;
+          
+          int x = ecudc_get_asUInt32(node, "PosX", 0);
+          int y = ecudc_get_asUInt32(node, "PosY", 0);
+          
+          m_players [id] = new GamePlayer (ecudc_get_asString(node, "Name", "unknown"), x, y, isSpawned);
         }
       }
     }
