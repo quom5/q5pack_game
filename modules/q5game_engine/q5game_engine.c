@@ -18,7 +18,7 @@
 
 //================================================================================================
 
-static Q5ModuleProperties properties = {"GAEGN", "game engine", 10001, 0x4001};
+static Q5ModuleProperties properties = {"GAME_E", "game engine", 10001, 0x4001};
 
 typedef struct {
   

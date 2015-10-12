@@ -5,12 +5,11 @@
 #include <core/q5.h>
 #include <core/q5modules.h>
 #include <core/q5core.h>
+#include <core/q5auth.h>
 
 // entc includes
 #include <tools/ecasyncvc.h>
 #include <utils/ecmessages.h>
-#include <tools/ecdata.h>
-#include <tools/ecjson.h>
 #include <system/ectime.h>
 #include <system/ecthread.h>
 #include <types/ecbuffer.h>
@@ -24,7 +23,7 @@
 
 //================================================================================================
 
-static Q5ModuleProperties properties = {"GASRV", "Game server", 10001, 0x4001};
+static Q5ModuleProperties properties = {"GAME_S", "Game server", 10001, 0x4001};
 
 typedef struct {
   
@@ -50,6 +49,8 @@ typedef struct {
   
   int done;
   
+  EcTable data;
+  
 } Q5Module;
 
 typedef struct {
@@ -67,11 +68,49 @@ typedef struct {
 
 //===========================================================================================================
 
-void module_config (Q5Module* self, const EcUdc item)
-{ 
+int _STDCALL module_getPath (void* ptr, EcString* path, EcUserInfo userInfo, EcUdc* userData, EcUdc content, EcUdc object)
+{  
+  ecstr_replace (path, "");
+
+  return ENTC_RESCODE_OK;
 }
 
 //-------------------------------------------------------------------------------------
+
+int _STDCALL module_get (void* ptr, EcMessageData* dOut, EcUserInfo userInfo, EcUdc content, const EcString object)
+{
+  Q5Module* self = ptr;
+
+  dOut->content = gse_cursor (self->entities, NULL);
+  
+  dOut->type = Q5_MSGTYPE_TABLE; dOut->rev = 1;
+  dOut->ref = 0;
+  
+  return ENTC_RESCODE_OK;
+}
+
+//-------------------------------------------------------------------------------------
+
+int _STDCALL module_callback_get (void* ptr, EcMessageData* dIn, EcMessageData* dOut)
+{
+  if (isAssigned (dIn))
+  {
+    switch (dIn->type)
+    {
+      case Q5_MSGTYPE_STATE_INIT:
+      {
+        return auth_checkF0 (ptr, dIn, dOut, module_getPath, ENTC_UDC_TABLEINFO);
+      }
+      case Q5_MSGTYPE_STATE_PROCESS:
+      {
+        return auth_processF1 (ptr, dIn, dOut, module_get, FALSE);
+      }
+    }
+  }
+  return ENTC_RESCODE_IGNORE;
+}
+
+//===========================================================================================================
 
 static int _STDCALL module_thread_run (void* ptr)
 {
@@ -109,6 +148,12 @@ static int _STDCALL module_thread_run (void* ptr)
   }
   
   return !self->done;
+}
+
+//===========================================================================================================
+
+void module_config (Q5Module* self, const EcUdc item)
+{ 
 }
 
 //-------------------------------------------------------------------------------------
@@ -151,7 +196,7 @@ int module_start (Q5Module* self)
     ecthread_start(thread, module_thread_run, self);
   }
 
-  uint32_t gameEngineSrvNo = q5core_getModuleId (self->core, "GAEGN");
+  uint32_t gameEngineSrvNo = q5core_getModuleId (self->core, "GAME_E");
   
   if (gameEngineSrvNo == 0)
   {
@@ -161,6 +206,8 @@ int module_start (Q5Module* self)
   self->entities = gse_create (self->server, gameEngineSrvNo, "Lobo's geiler server");
   
   gse_addRealm (self->entities, "the shire");
+  
+  ecmessages_add (self->instance->msgid, Q5_DATA_GET, module_callback_get, self);
 
   return TRUE;
 }

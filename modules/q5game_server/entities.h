@@ -31,6 +31,8 @@ __LIB_EXPORT GameServerRealm gse_realm (GameServerEntities, const EcString name)
 
 __LIB_EXPORT void gse_sendPlayers (GameServerEntities, GameServerRealm, ENetPeer* peer);
 
+__LIB_EXPORT EcUdc gse_cursor (GameServerEntities, GameServerRealm);
+
 __CPP_EXTERN______________________________________________________________________________END
 
 #endif

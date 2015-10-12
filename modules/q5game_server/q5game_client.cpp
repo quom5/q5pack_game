@@ -4,6 +4,7 @@
 #include <system/ecsocket.h>
 #include <system/ecsignal.h>
 #include <tools/ecjson.h>
+#include <tools/ecbins.h>
 #include <types/ecudc.h>
 #include <system/ecthread.h>
 
@@ -284,7 +285,7 @@ namespace {
               break;
               case '2': // authenticated
               {
-                setAuthenticated ((const char*)buf->buffer + 2);
+                setAuthenticated ((const char*)buf->buffer + 2, buf->size -2);
               }
               break;
             }
@@ -296,27 +297,27 @@ namespace {
             {
               case '3': // new player showed off
               {
-                newPlayer ((const char*)buf->buffer + 2);
+                newPlayer ((const char*)buf->buffer + 2, buf->size - 2);
               }
               break;
               case '4': // player left
               {
-                clearPlayer ((const char*)buf->buffer + 2);
+                clearPlayer ((const char*)buf->buffer + 2, buf->size - 2);
               }
               break;
               case '5': // player left
               {
-                spawnPlayer ((const char*)buf->buffer + 2);
+                spawnPlayer ((const char*)buf->buffer + 2, buf->size - 2);
               }
               break;
               case '6': // player left
               {
-                unspawnPlayer ((const char*)buf->buffer + 2);
+                unspawnPlayer ((const char*)buf->buffer + 2, buf->size - 2);
               }
               break;
               case '7': // set player position
               {
-                setPlayerPosition ((const char*)buf->buffer + 2);
+                setPlayerPosition ((const char*)buf->buffer + 2, buf->size - 2);
               }
               break;
             }
@@ -334,19 +335,13 @@ namespace {
     
     void sendNode (const EcString command, EcUdc node)
     {
-      EcString jsonText = ecjson_write(node);
-      
-      EcString commandText = ecstr_cat2(command, jsonText);
-      
-      EcBuffer buf = ecbuf_create_str (&commandText);
-      
-      ENetPacket * packet = enet_packet_create (buf->buffer, buf->size, 0);
+      EcBuffer bins = ecbins_write(node, command);
+
+      ENetPacket * packet = enet_packet_create (bins->buffer, bins->size, 0);
       
       enet_peer_send	(m_peer, 0, packet);
       
-      ecbuf_destroy(&buf);
-      
-      ecstr_delete(&jsonText);
+      ecbuf_destroy(&bins);
     }
     
     //------------------------------------------------------------------------------------------------
@@ -378,9 +373,11 @@ namespace {
     
     //------------------------------------------------------------------------------------------------
     
-    void setAuthenticated (const char* buffer)
+    void setAuthenticated (const char* buffer, ulong_t len)
     {
-      EcUdc node = ecjson_read(buffer, NULL);
+      EcBuffer_s posbuf = { (unsigned char*)buffer, len };
+
+      EcUdc node = ecbins_read (&posbuf, NULL);
       
       // get the own id
       m_id = ecudc_get_asUInt32(node, "Id", 0);
@@ -404,9 +401,11 @@ namespace {
     
     //------------------------------------------------------------------------------------------------
 
-    void newPlayer (const char* buffer)
+    void newPlayer (const char* buffer, ulong_t len)
     {
-      EcUdc node = ecjson_read(buffer, NULL);
+      EcBuffer_s posbuf = { (unsigned char*)buffer, len };
+
+      EcUdc node = ecbins_read (&posbuf, NULL);
       
       int id = ecudc_get_asUInt32(node, "Id", 0);
       if (id == m_id)
@@ -429,11 +428,13 @@ namespace {
     
     //------------------------------------------------------------------------------------------------
     
-    void clearPlayer (const char* buffer)
+    void clearPlayer (const char* buffer, ulong_t len)
     {
       if (m_win)
       {
-        EcUdc node = ecjson_read(buffer, NULL);
+        EcBuffer_s posbuf = { (unsigned char*)buffer, len };
+
+        EcUdc node = ecbins_read(&posbuf, NULL);
         
         int id = ecudc_get_asUInt32(node, "Id", 0);
         if (id > 0 && id != m_id)
@@ -450,11 +451,13 @@ namespace {
 
     //------------------------------------------------------------------------------------------------
     
-    void spawnPlayer (const char* buffer)
+    void spawnPlayer (const char* buffer, ulong_t len)
     {
       if (m_win)
       {
-        EcUdc node = ecjson_read(buffer, NULL);
+        EcBuffer_s posbuf = { (unsigned char*)buffer, len };
+
+        EcUdc node = ecbins_read(&posbuf, NULL);
         
         int id = ecudc_get_asUInt32(node, "Id", 0);
         if (id == m_id)
@@ -488,11 +491,13 @@ namespace {
     
     //------------------------------------------------------------------------------------------------
     
-    void unspawnPlayer (const char* buffer)
+    void unspawnPlayer (const char* buffer, ulong_t len)
     {
       if (m_win)
       {
-        EcUdc node = ecjson_read(buffer, NULL);
+        EcBuffer_s posbuf = { (unsigned char*)buffer, len };
+
+        EcUdc node = ecbins_read(&posbuf, NULL);
         
         int id = ecudc_get_asUInt32(node, "Id", 0);
         if (id == m_id)
@@ -512,11 +517,13 @@ namespace {
 
     //------------------------------------------------------------------------------------------------
     
-    void setPlayerPosition (const char* buffer)
+    void setPlayerPosition (const char* buffer, ulong_t len)
     {
       if (m_win)
       {
-        EcUdc node = ecjson_read(buffer, NULL);
+        EcBuffer_s posbuf = { (unsigned char*)buffer, len };
+
+        EcUdc node = ecbins_read(&posbuf, NULL);
         
         int id = ecudc_get_asUInt32(node, "Id", 0);
         if (id > 0 && id != m_id)

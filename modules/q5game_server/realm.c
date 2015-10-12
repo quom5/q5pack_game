@@ -6,6 +6,7 @@
 #include <utils/ecmessages.h>
 #include <tools/ecjson.h>
 #include <types/ecudc.h>
+#include <tools/ecbins.h>
 #include <system/ecmutex.h>
 
 #define GAME_ENGINE_PLAYER_NEW 10001
@@ -66,19 +67,13 @@ void gs_realm_broadcast (GameServerRealm self, const EcString command, EcUdc nod
 {
   if (node)
   {
-    EcString jsonText = ecjson_write(node);
+    EcBuffer bins = ecbins_write(node, command);
     
-    EcString commandText = ecstr_cat2(command, jsonText);
-    
-    EcBuffer buf = ecbuf_create_str (&commandText);
-    
-    ENetPacket * packet = enet_packet_create (buf->buffer, buf->size, reliable ? ENET_PACKET_FLAG_RELIABLE : 0);
+    ENetPacket * packet = enet_packet_create (bins->buffer, bins->size, reliable ? ENET_PACKET_FLAG_RELIABLE : 0);
     
     enet_host_broadcast	(self->host, 0, packet);
     
-    ecbuf_destroy(&buf);
-    
-    ecstr_delete(&jsonText);      
+    ecbuf_destroy(&bins);
   }
   else
   {

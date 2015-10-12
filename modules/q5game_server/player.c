@@ -4,6 +4,7 @@
 
 #include <utils/ecmessages.h>
 #include <tools/ecjson.h>
+#include <tools/ecbins.h>
 #include <types/ecudc.h>
 
 struct GameServerPlayer_s
@@ -57,19 +58,13 @@ GameServerPlayer gs_player_create (GameServerEntities entities, ENetPeer* peer)
 
 void gs_player_send (ENetPeer* peer, const EcString command, EcUdc node, int reliable)
 {
-  EcString jsonText = ecjson_write(node);
+  EcBuffer bins = ecbins_write (node, command);
   
-  EcString commandText = ecstr_cat2(command, jsonText);
-  
-  EcBuffer buf = ecbuf_create_str (&commandText);
-  
-  ENetPacket * packet = enet_packet_create (buf->buffer, buf->size, reliable ? ENET_PACKET_FLAG_RELIABLE : 0);
+  ENetPacket * packet = enet_packet_create (bins->buffer, bins->size, reliable ? ENET_PACKET_FLAG_RELIABLE : 0);
   
   enet_peer_send (peer, 0, packet);
   
-  ecbuf_destroy(&buf);
-  
-  ecstr_delete(&jsonText);  
+  ecbuf_destroy(&bins);
 }
 
 //-------------------------------------------------------------------------------------------
@@ -83,7 +78,7 @@ void gs_player_leaveRealm (GameServerPlayer self)
   
   EcUdc node = ecudc_create(ENTC_UDC_NODE, NULL);
   
-  eclogger_fmt (LL_TRACE, "GCTX", "player", "player '%s' left '%s'", self->name, gs_realm_name (self->realm));  
+  eclogger_fmt (LL_TRACE, "GAME_S", "player", "player '%s' left '%s'", self->name, gs_realm_name (self->realm));  
   
   // add user id to node
   ecudc_add_asUInt32(node, "Id", self->playerNo);
@@ -105,7 +100,7 @@ void gs_player_disconnect (GameServerPlayer self, ENetPeer* peer)
   
   EcUdc node = ecudc_create(ENTC_UDC_NODE, NULL);
   
-  eclogger_fmt (LL_TRACE, "GCTX", "recv", "player disconnected '%s'", self->name);  
+  eclogger_fmt (LL_TRACE, "GAME_S", "recv", "player disconnected '%s'", self->name);  
   
   gs_player_send (self->peer, "01", node, TRUE);
   
@@ -133,12 +128,14 @@ void gs_player_authenticate (GameServerPlayer self, ENetPeer* peer, const unsign
   
   pno++;
   
-  EcUdc node = ecjson_read((const char*)buffer, NULL);
+  EcBuffer_s posbuf = { (unsigned char*)buffer, len };
+
+  EcUdc node = ecbins_read(&posbuf, NULL);
   
   self->name = ecstr_copy(ecudc_get_asString(node, "Name", "[unknown]"));
   self->playerNo = pno;
   
-  eclogger_fmt (LL_TRACE, "GCTX", "recv", "player authenticated as '%s'", self->name);      
+  eclogger_fmt (LL_TRACE, "GAME_S", "recv", "player authenticated as '%s'", self->name);      
   
   ecudc_add_asUInt32(node, "Id", self->playerNo);
 
@@ -161,7 +158,7 @@ void gs_player_spawn (GameServerPlayer self)
     return;
   }
   
-  eclogger_fmt (LL_TRACE, "GCTX", "recv", "player was spawned '%s' [%i|%i|%i]", self->name, self->posX, self->posY, self->posZ);
+  eclogger_fmt (LL_TRACE, "GAME_S", "recv", "player was spawned '%s' [%i|%i|%i]", self->name, self->posX, self->posY, self->posZ);
   
   EcUdc node = ecudc_create(ENTC_UDC_NODE, NULL);
   
@@ -187,7 +184,9 @@ void gs_player_joinRealm (GameServerPlayer self, ENetPeer* peer, const unsigned 
     gs_player_leaveRealm (self);
   }
   
-  EcUdc node = ecjson_read((const char*)buffer, NULL);
+  EcBuffer_s posbuf = { (unsigned char*)buffer, len };
+
+  EcUdc node = ecbins_read(&posbuf, NULL);
 
   self->realm = gse_realm (self->entities, ecudc_get_asString(node, "Realm", NULL));
   
@@ -196,7 +195,7 @@ void gs_player_joinRealm (GameServerPlayer self, ENetPeer* peer, const unsigned 
     return;
   }
   
-  eclogger_fmt (LL_TRACE, "GCTX", "player", "player '%s' enters '%s'", self->name, gs_realm_name (self->realm));  
+  eclogger_fmt (LL_TRACE, "GAME_S", "player", "player '%s' enters '%s'", self->name, gs_realm_name (self->realm));  
   
   ecudc_add_asUInt32(node, "Id", self->playerNo);
   ecudc_add_asString(node, "Name", self->name);
@@ -222,7 +221,7 @@ void gs_player_unspawn (GameServerPlayer self)
     return;
   }
   
-  eclogger_fmt (LL_TRACE, "GCTX", "recv", "player was paused '%s' [%i|%i|%i]", self->name, self->posX, self->posY, self->posZ);
+  eclogger_fmt (LL_TRACE, "GAME_S", "recv", "player was paused '%s' [%i|%i|%i]", self->name, self->posX, self->posY, self->posZ);
   
   EcUdc node = ecudc_create(ENTC_UDC_NODE, NULL);
   
@@ -249,13 +248,15 @@ void gs_player_position (GameServerPlayer self, const unsigned char* buffer, ulo
     return;
   }
   
-  EcUdc node = ecjson_read((const char*)buffer, NULL);
+  EcBuffer_s posbuf = { (unsigned char*)buffer, len };
+  
+  EcUdc node = ecbins_read(&posbuf, NULL);
   
   self->posX = ecudc_get_asUInt32(node, "PosX", self->posX);
   self->posY = ecudc_get_asUInt32(node, "PosY", self->posY);
   self->posZ = ecudc_get_asUInt32(node, "PosZ", self->posZ);
   
-  eclogger_fmt (LL_TRACE, "GCTX", "recv", "set player position '%s' [%i|%i|%i]", self->name, self->posX, self->posY, self->posZ);
+  eclogger_fmt (LL_TRACE, "GAME_S", "recv", "set player position '%s' [%i|%i|%i]", self->name, self->posX, self->posY, self->posZ);
   
   ecudc_add_asUInt32(node, "Id", self->playerNo);
   
@@ -319,7 +320,7 @@ void gs_player_reqPlayers (GameServerPlayer self, ENetPeer* peer)
     return;
   }
   
-  eclogger_fmt (LL_TRACE, "GCTX", "request", "send all players");
+  eclogger_fmt (LL_TRACE, "GAME_S", "request", "send all players");
   
   gse_sendPlayers (self->entities, self->realm, peer);
 }
@@ -379,7 +380,7 @@ void gs_player_sendInfo (GameServerPlayer self, GameServerRealm realm, ENetPeer*
     ecudc_add_asUInt32(node, "PosY", self->posY);
     ecudc_add_asUInt32(node, "PosZ", self->posZ);
     
-    eclogger_fmt (LL_TRACE, "GCTX", "request", "send player '%s'", self->name);
+    eclogger_fmt (LL_TRACE, "GAME_S", "request", "send player '%s'", self->name);
     
     gs_player_send (peer, "13", node, TRUE);  // send new player
     
@@ -389,3 +390,21 @@ void gs_player_sendInfo (GameServerPlayer self, GameServerRealm realm, ENetPeer*
 
 //-------------------------------------------------------------------------------------------
 
+void gs_player_fillInfo (GameServerPlayer self, GameServerRealm realm, EcTable table, int row)
+{
+  ectable_set (table, row, 0, "0");
+  ectable_set (table, row, 1, self->name);
+  
+  if (self->realm)
+  {
+    ectable_set (table, row, 2, gs_realm_name (self->realm));    
+  }
+  else
+  {
+    ectable_set (table, row, 2, "");    
+  }
+
+  ectable_set (table, row, 3, self->spawned ? "true" : "false");    
+}
+
+//-------------------------------------------------------------------------------------------

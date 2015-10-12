@@ -18,6 +18,8 @@ __LIB_EXPORT void gs_player_message (GameServerPlayer, ENetPeer*, EcBuffer, int 
 
 __LIB_EXPORT void gs_player_sendInfo (GameServerPlayer, GameServerRealm, ENetPeer* peer);
 
+__LIB_EXPORT void gs_player_fillInfo (GameServerPlayer, GameServerRealm, EcTable, int row);
+
 __CPP_EXTERN______________________________________________________________________________END
 
 #endif

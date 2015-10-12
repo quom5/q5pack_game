@@ -92,7 +92,7 @@ void gse_addPlayer (GameServerEntities self, ENetPeer* peer)
   
   ecmutex_unlock (self->mutex);
 
-  eclogger_fmt (LL_TRACE, "GCTX", "entities", "player added to server");      
+  eclogger_fmt (LL_TRACE, "GAME_S", "entities", "player added to server");      
 }
 
 //-------------------------------------------------------------------------------------
@@ -107,7 +107,7 @@ void gse_rmPlayer (GameServerEntities self, GameServerPlayer* ptrPlayer)
   
   gs_player_destroy (ptrPlayer);
 
-  eclogger_fmt (LL_TRACE, "GCTX", "entities", "player removed from server");  
+  eclogger_fmt (LL_TRACE, "GAME_S", "entities", "player removed from server");  
 }
 
 //-------------------------------------------------------------------------------------
@@ -122,7 +122,7 @@ GameServerRealm gse_addRealm (GameServerEntities self, const EcString name)
   
   ecmutex_unlock (self->mutex);
 
-  eclogger_fmt (LL_TRACE, "GCTX", "entities", "new realm '%s' added to server", name);      
+  eclogger_fmt (LL_TRACE, "GAME_S", "entities", "new realm '%s' added to server", name);      
 
   return realm;
 }
@@ -180,6 +180,91 @@ void gse_sendPlayers (GameServerEntities self, GameServerRealm realm, ENetPeer* 
   }
   
   ecmutex_unlock (self->mutex);
+}
+
+//-------------------------------------------------------------------------------------
+
+typedef struct 
+{
+  
+  GameServerEntities entities;
+  
+  EcTable data;
+  
+  int status;
+  
+  EcListCursor cursor;
+  
+} GameServerEntitiesInfoCursor;
+
+//----------------------------------------------------------------------------------------
+
+int _STDCALL gse_cursor_fill (void* ptr, EcTable* table)
+{
+  GameServerEntitiesInfoCursor* self = ptr;
+  
+  eclogger_msg (LL_TRACE, "GAME_S", "cursor", "fill cursor");
+
+  int cnt = 0;
+  
+  while (cnt < 10 && self->status)
+  {
+    self->status = eclist_cnext (&(self->cursor));
+    
+    if (self->status)
+    {
+      GameServerPlayer player = self->cursor.value;
+      
+      cnt++;
+      
+      gs_player_fillInfo (player, NULL, self->data, cnt);
+    }    
+  }
+  
+  *table = self->data;
+  
+  return cnt;
+}
+
+//----------------------------------------------------------------------------------------
+
+int _STDCALL gse_cursor_destroy (void* ptr, EcTable table)
+{
+  GameServerEntitiesInfoCursor* self = ptr;
+  
+  eclogger_msg (LL_TRACE, "GAME_S", "cursor", "destroy and clean cursor");
+
+  //ectable_delete (&(self->data));
+  
+  return TRUE;
+}
+
+//-------------------------------------------------------------------------------------
+
+EcUdc gse_cursor (GameServerEntities self, GameServerRealm realm)
+{
+  EcUdc udc = ecudc_create(ENTC_UDC_CURSOR, NULL);
+  
+  EcCursor cursor = ecudc_asCursor (udc);
+    
+  GameServerEntitiesInfoCursor* ci = ENTC_NEW (GameServerEntitiesInfoCursor);
+  
+  eclogger_msg (LL_TRACE, "GAME_S", "cursor", "create new cursor");
+
+  ci->entities = self;
+  ci->data = ectable_new (4, 10);
+  ci->status = TRUE;
+  
+  ectable_set (ci->data, 0, 0, "id");
+  ectable_set (ci->data, 0, 1, "name");
+  ectable_set (ci->data, 0, 2, "realm");
+  ectable_set (ci->data, 0, 3, "spawned");
+
+  eclist_cursor (self->players, &(ci->cursor));
+    
+  eccursor_callbacks(cursor, ci, gse_cursor_fill, gse_cursor_destroy);
+  
+  return udc;
 }
 
 //-------------------------------------------------------------------------------------
