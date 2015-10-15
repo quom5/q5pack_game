@@ -15,7 +15,6 @@
 #include <types/ecbuffer.h>
 
 // project includes
-#include "prot_context.h"
 #include "entities.h"
 #include "frames.h"
 
@@ -241,6 +240,11 @@ int module_stop (Q5Module* self)
   while (eclist_cnext (&cursor))
   {
     ecthread_join (cursor.value);
+  }
+  
+  while (eclist_cnext (&cursor))
+  {
+    ecthread_delete((EcThread*)(&cursor.value));
   }
   
   eclist_clear (self->threads);
