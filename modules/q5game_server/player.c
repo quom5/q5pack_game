@@ -87,6 +87,8 @@ void gs_player_leaveRealm (GameServerPlayer self)
   
   self->realm = NULL;
   self->spawned = FALSE;
+  
+  ecudc_destroy(&node);
 }
 
 //-------------------------------------------------------------------------------------------
