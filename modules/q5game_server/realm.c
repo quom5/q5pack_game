@@ -17,8 +17,6 @@ struct GameServerRealm_s
   
   ENetHost* host;
   
-  EcList players;
-  
   EcMutex mutex;
   
   uint32_t gameEngineSrvNo;
@@ -34,7 +32,6 @@ GameServerRealm gs_realm_create (ENetHost* enetHost, uint32_t gameEngineSrvNo, c
   GameServerRealm self = ENTC_NEW (struct GameServerRealm_s);
   
   self->host = enetHost;
-  self->players = eclist_new ();
   
   self->mutex = ecmutex_new ();
   
@@ -50,8 +47,6 @@ GameServerRealm gs_realm_create (ENetHost* enetHost, uint32_t gameEngineSrvNo, c
 void gs_realm_destroy (GameServerRealm* pself)
 {
   GameServerRealm self = *pself;
-  
-  eclist_delete(&(self->players));
   
   ecmutex_delete(&(self->mutex));
   

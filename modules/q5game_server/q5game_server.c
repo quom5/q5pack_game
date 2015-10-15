@@ -32,15 +32,10 @@ typedef struct {
   // reference
   Q5Core core;
   
-  EcAsync async;
-
   uint_t port;
   
   EcString host;
-  
-  // reference
-  EcAsynUdpDispatcher dispatcher;
-  
+    
   GameServerEntities entities;
   
   ENetHost* server;
@@ -247,7 +242,7 @@ int module_stop (Q5Module* self)
     ecthread_delete((EcThread*)(&cursor.value));
   }
   
-  eclist_clear (self->threads);
+  eclist_delete (&(self->threads));
   
   gse_destroy(&(self->entities));
 
@@ -271,9 +266,6 @@ Q5Module* module_create (Q5Core core, Q5ModuleInstance* instance)
   
   self->port = 44000;
   self->host = ecstr_copy ("0.0.0.0");
-  
-  self->async = NULL;
-  self->dispatcher = NULL;
   
   self->entities = NULL;
   

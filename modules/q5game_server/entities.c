@@ -1,6 +1,7 @@
 #include "entities.h"
 
 #include "player.h"
+#include "realm.h"
 
 #include <utils/ecmessages.h>
 #include <tools/ecjson.h>
