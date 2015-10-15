@@ -201,11 +201,10 @@ typedef struct
 
 int _STDCALL gse_cursor_fill (void* ptr, EcTable* table)
 {
+  int cnt = 0;
   GameServerEntitiesInfoCursor* self = ptr;
   
   eclogger_msg (LL_TRACE, "GAME_S", "cursor", "fill cursor");
-
-  int cnt = 0;
   
   while (cnt < 10 && self->status)
   {

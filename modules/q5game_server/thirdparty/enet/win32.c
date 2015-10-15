@@ -9,6 +9,10 @@
 #include <windows.h>
 #include <mmsystem.h>
 
+// need to link against those libs
+#pragma comment(lib, "Winmm.lib")
+#pragma comment(lib, "Ws2_32.lib")
+
 static enet_uint32 timeBase = 0;
 
 int

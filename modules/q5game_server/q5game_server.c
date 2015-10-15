@@ -170,6 +170,8 @@ void module_config (Q5Module* self, const EcUdc item)
 
 int module_start (Q5Module* self)
 {
+  int i;  
+  uint32_t gameEngineSrvNo;
   ENetAddress address;
 
   if (enet_initialize () != 0)
@@ -196,7 +198,6 @@ int module_start (Q5Module* self)
   
   self->done = FALSE;
   
-  int i;  
   for (i = 0; i < 1; i++)
   {
     EcThread thread = ecthread_new ();
@@ -206,7 +207,7 @@ int module_start (Q5Module* self)
     ecthread_start(thread, module_thread_run, self);
   }
 
-  uint32_t gameEngineSrvNo = q5core_getModuleId (self->core, "GAME_E");
+  gameEngineSrvNo = q5core_getModuleId (self->core, "GAME_E");
   
   if (gameEngineSrvNo == 0)
   {

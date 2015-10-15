@@ -71,12 +71,14 @@ void gs_player_send (ENetPeer* peer, const EcString command, EcUdc node, int rel
 
 void gs_player_leaveRealm (GameServerPlayer self)
 {
+  EcUdc node;
+
   if (self->realm == NULL)
   {
     return;
   }
   
-  EcUdc node = ecudc_create(ENTC_UDC_NODE, NULL);
+  node = ecudc_create(ENTC_UDC_NODE, NULL);
   
   eclogger_fmt (LL_TRACE, "GAME_S", "player", "player '%s' left '%s'", self->name, gs_realm_name (self->realm));  
   
@@ -95,12 +97,14 @@ void gs_player_leaveRealm (GameServerPlayer self)
 
 void gs_player_disconnect (GameServerPlayer self, ENetPeer* peer)
 {
+  EcUdc node;
+
   if (self->realm)
   {
     gs_player_leaveRealm (self);
   }
   
-  EcUdc node = ecudc_create(ENTC_UDC_NODE, NULL);
+  node = ecudc_create(ENTC_UDC_NODE, NULL);
   
   eclogger_fmt (LL_TRACE, "GAME_S", "recv", "player disconnected '%s'", self->name);  
   
@@ -144,6 +148,8 @@ void gs_player_authenticate (GameServerPlayer self, ENetPeer* peer, GameServerFr
 
 void gs_player_spawn (GameServerPlayer self)
 {
+  EcUdc node;
+
   if (self->realm == NULL)
   {
     return;
@@ -156,7 +162,7 @@ void gs_player_spawn (GameServerPlayer self)
   
   eclogger_fmt (LL_TRACE, "GAME_S", "recv", "player was spawned '%s' [%i|%i|%i]", self->name, self->posX, self->posY, self->posZ);
   
-  EcUdc node = ecudc_create(ENTC_UDC_NODE, NULL);
+  node = ecudc_create(ENTC_UDC_NODE, NULL);
   
   ecudc_add_asUInt32(node, "Id", self->playerNo);
   
@@ -201,6 +207,8 @@ void gs_player_joinRealm (GameServerPlayer self, ENetPeer* peer, GameServerFrame
 
 void gs_player_unspawn (GameServerPlayer self)
 {
+  EcUdc node;
+
   if (self->realm == NULL)
   {
     return;
@@ -213,7 +221,7 @@ void gs_player_unspawn (GameServerPlayer self)
   
   eclogger_fmt (LL_TRACE, "GAME_S", "recv", "player was paused '%s' [%i|%i|%i]", self->name, self->posX, self->posY, self->posZ);
   
-  EcUdc node = ecudc_create(ENTC_UDC_NODE, NULL);
+  node = ecudc_create(ENTC_UDC_NODE, NULL);
   
   ecudc_add_asUInt32(node, "Id", self->playerNo);
   
