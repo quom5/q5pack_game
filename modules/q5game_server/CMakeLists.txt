@@ -6,6 +6,8 @@ SET (GAMESERVER_SOURCES
   q5game_server.c
   entities.h
   entities.c
+  frames.h
+  frames.c
   realm.h
   realm.c
   player.h

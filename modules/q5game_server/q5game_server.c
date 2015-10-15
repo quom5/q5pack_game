@@ -17,6 +17,7 @@
 // project includes
 #include "prot_context.h"
 #include "entities.h"
+#include "frames.h"
 
 // enet includes
 #include <enet/enet.h>
@@ -112,6 +113,21 @@ int _STDCALL module_callback_get (void* ptr, EcMessageData* dIn, EcMessageData* 
 
 //===========================================================================================================
 
+void module_frames (Q5Module* self, ENetEvent* event, EcBuffer buf)
+{
+  GameServerFrameCursor cursor;
+  GameServerFrame frame;
+  
+  gs_frames_init (buf, &cursor);
+  
+  while (gs_frames_next (&cursor, &frame))
+  {
+    gse_message (self->entities, event->peer, &frame, event->channelID);
+  }
+}
+
+//-------------------------------------------------------------------------------------
+
 static int _STDCALL module_thread_run (void* ptr)
 {
   Q5Module* self = ptr;
@@ -132,7 +148,7 @@ static int _STDCALL module_thread_run (void* ptr)
       {
         EcBuffer_s buf = { event.packet->data, event.packet->dataLength };
         
-        gse_message (self->entities, event.peer, &buf, event.channelID);
+        module_frames (self, &event, &buf);
         
         enet_packet_destroy (event.packet);
       }

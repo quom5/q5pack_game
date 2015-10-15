@@ -1,6 +1,8 @@
 #ifndef GAMESERVER_ENTITIES_H
 #define GAMESERVER_ENTITIES_H 1
 
+#include "frames.h"
+
 #include <system/macros.h>
 #include <tools/ecasyncvc.h>
 
@@ -25,7 +27,7 @@ __LIB_EXPORT GameServerRealm gse_addRealm (GameServerEntities, const EcString na
 
 // misc
 
-__LIB_EXPORT void gse_message (GameServerEntities, ENetPeer*, EcBuffer, int channel);
+__LIB_EXPORT void gse_message (GameServerEntities, ENetPeer*, GameServerFrame*, int channel);
 
 __LIB_EXPORT GameServerRealm gse_realm (GameServerEntities, const EcString name);
 

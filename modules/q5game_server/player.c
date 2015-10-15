@@ -122,26 +122,20 @@ void gs_player_destroy (GameServerPlayer* pself)
 
 //-------------------------------------------------------------------------------------------
 
-void gs_player_authenticate (GameServerPlayer self, ENetPeer* peer, const unsigned char* buffer, ulong_t len)
+void gs_player_authenticate (GameServerPlayer self, ENetPeer* peer, GameServerFrame* frame)
 {
   static int pno = 0;
   
   pno++;
   
-  EcBuffer_s posbuf = { (unsigned char*)buffer, len };
-
-  EcUdc node = ecbins_read(&posbuf, NULL);
-  
-  self->name = ecstr_copy(ecudc_get_asString(node, "Name", "[unknown]"));
+  self->name = ecstr_copy(ecudc_get_asString(frame->content, "Name", "[unknown]"));
   self->playerNo = pno;
   
   eclogger_fmt (LL_TRACE, "GAME_S", "recv", "player authenticated as '%s'", self->name);      
   
-  ecudc_add_asUInt32(node, "Id", self->playerNo);
+  ecudc_add_asUInt32(frame->content, "Id", self->playerNo);
 
-  gs_player_send (self->peer, "02", node, TRUE);
-
-  ecudc_destroy(&node);  
+  gs_player_send (self->peer, "02", frame->content, TRUE);
 }
 
 //-------------------------------------------------------------------------------------------
@@ -177,18 +171,14 @@ void gs_player_spawn (GameServerPlayer self)
 
 //-------------------------------------------------------------------------------------------
 
-void gs_player_joinRealm (GameServerPlayer self, ENetPeer* peer, const unsigned char* buffer, ulong_t len)
+void gs_player_joinRealm (GameServerPlayer self, ENetPeer* peer, GameServerFrame* frame)
 {
   if (self->realm)
   {
     gs_player_leaveRealm (self);
   }
   
-  EcBuffer_s posbuf = { (unsigned char*)buffer, len };
-
-  EcUdc node = ecbins_read(&posbuf, NULL);
-
-  self->realm = gse_realm (self->entities, ecudc_get_asString(node, "Realm", NULL));
+  self->realm = gse_realm (self->entities, ecudc_get_asString(frame->content, "Realm", NULL));
   
   if (self->realm == NULL)
   {
@@ -197,12 +187,10 @@ void gs_player_joinRealm (GameServerPlayer self, ENetPeer* peer, const unsigned 
   
   eclogger_fmt (LL_TRACE, "GAME_S", "player", "player '%s' enters '%s'", self->name, gs_realm_name (self->realm));  
   
-  ecudc_add_asUInt32(node, "Id", self->playerNo);
-  ecudc_add_asString(node, "Name", self->name);
+  ecudc_add_asUInt32(frame->content, "Id", self->playerNo);
+  ecudc_add_asString(frame->content, "Name", self->name);
 
-  gs_realm_broadcast (self->realm, "13", node, TRUE);  // inform all
-  
-  ecudc_destroy(&node); 
+  gs_realm_broadcast (self->realm, "13", frame->content, TRUE);  // inform all
   
   gs_player_spawn (self);
 }
@@ -236,7 +224,7 @@ void gs_player_unspawn (GameServerPlayer self)
 
 //-------------------------------------------------------------------------------------------
 
-void gs_player_position (GameServerPlayer self, const unsigned char* buffer, ulong_t len)
+void gs_player_position (GameServerPlayer self, GameServerFrame* frame)
 {
   if (self->realm == NULL)
   {
@@ -248,28 +236,22 @@ void gs_player_position (GameServerPlayer self, const unsigned char* buffer, ulo
     return;
   }
   
-  EcBuffer_s posbuf = { (unsigned char*)buffer, len };
-  
-  EcUdc node = ecbins_read(&posbuf, NULL);
-  
-  self->posX = ecudc_get_asUInt32(node, "PosX", self->posX);
-  self->posY = ecudc_get_asUInt32(node, "PosY", self->posY);
-  self->posZ = ecudc_get_asUInt32(node, "PosZ", self->posZ);
+  self->posX = ecudc_get_asUInt32(frame->content, "PosX", self->posX);
+  self->posY = ecudc_get_asUInt32(frame->content, "PosY", self->posY);
+  self->posZ = ecudc_get_asUInt32(frame->content, "PosZ", self->posZ);
   
   eclogger_fmt (LL_TRACE, "GAME_S", "recv", "set player position '%s' [%i|%i|%i]", self->name, self->posX, self->posY, self->posZ);
   
-  ecudc_add_asUInt32(node, "Id", self->playerNo);
+  ecudc_add_asUInt32(frame->content, "Id", self->playerNo);
   
-  gs_realm_broadcast (self->realm, "17", node, FALSE);
-  
-  ecudc_destroy(&node);
+  gs_realm_broadcast (self->realm, "17", frame->content, FALSE);
 }
 
 //-------------------------------------------------------------------------------------
 
-int gs_player_basic_commands (GameServerPlayer player, ENetPeer* peer, EcBuffer buf)
+int gs_player_basic_commands (GameServerPlayer player, ENetPeer* peer, GameServerFrame* frame)
 {
-  switch (buf->buffer[1])
+  switch (frame->ch2)
   {
     case '1':  // leave server / disconnect
     {
@@ -278,12 +260,12 @@ int gs_player_basic_commands (GameServerPlayer player, ENetPeer* peer, EcBuffer 
     break;
     case '2':  // authenticate
     {
-      gs_player_authenticate (player, peer, buf->buffer + 2, buf->size - 2);
+      gs_player_authenticate (player, peer, frame);
     }
     break;
     case '3':  // join realm
     {
-      gs_player_joinRealm (player, peer, buf->buffer + 2, buf->size - 2);
+      gs_player_joinRealm (player, peer, frame);
     }
     break;
     case '4':  // leave realm
@@ -303,7 +285,7 @@ int gs_player_basic_commands (GameServerPlayer player, ENetPeer* peer, EcBuffer 
     break;
     case '7':  // new player position
     {
-      gs_player_position (player, buf->buffer + 2, buf->size - 2);              
+      gs_player_position (player, frame);              
     }
     break;
   }
@@ -327,9 +309,9 @@ void gs_player_reqPlayers (GameServerPlayer self, ENetPeer* peer)
 
 //-------------------------------------------------------------------------------------------
 
-void gs_player_request_commands (GameServerPlayer player, ENetPeer* peer, EcBuffer buf)
+void gs_player_request_commands (GameServerPlayer player, ENetPeer* peer, GameServerFrame* frame)
 {
-  switch (buf->buffer[1])
+  switch (frame->ch2)
   {
     case '1':  // request list of all realms 
     {
@@ -346,19 +328,19 @@ void gs_player_request_commands (GameServerPlayer player, ENetPeer* peer, EcBuff
 
 //-------------------------------------------------------------------------------------------
 
-void gs_player_message (GameServerPlayer self, ENetPeer* peer, EcBuffer buf, int channel)
+void gs_player_message (GameServerPlayer self, ENetPeer* peer, GameServerFrame* frame, int channel)
 {
   if (channel == 0)  // game channel
   {
-    switch (buf->buffer[0])
+    switch (frame->ch1)
     {
       case '0':  // basic commands
       {
-        gs_player_basic_commands (self, peer, buf);
+        gs_player_basic_commands (self, peer, frame);
       }
       case '2':  // request commands
       {
-        gs_player_request_commands (self, peer, buf);
+        gs_player_request_commands (self, peer, frame);
       }
     }
   }
@@ -397,7 +379,7 @@ void gs_player_fillInfo (GameServerPlayer self, GameServerRealm realm, EcTable t
   
   if (self->realm)
   {
-    ectable_set (table, row, 2, gs_realm_name (self->realm));    
+    ectable_set (table, row, 2, (char*)gs_realm_name (self->realm));    
   }
   else
   {

@@ -129,9 +129,9 @@ GameServerRealm gse_addRealm (GameServerEntities self, const EcString name)
 
 //-------------------------------------------------------------------------------------
 
-void gse_message (GameServerEntities self, ENetPeer* peer, EcBuffer buf, int channel)
+void gse_message (GameServerEntities self, ENetPeer* peer, GameServerFrame* frame, int channel)
 {
-  gs_player_message (peer->data, peer, buf, channel);
+  gs_player_message (peer->data, peer, frame, channel);
 }
 
 //-------------------------------------------------------------------------------------
@@ -230,7 +230,7 @@ int _STDCALL gse_cursor_fill (void* ptr, EcTable* table)
 
 int _STDCALL gse_cursor_destroy (void* ptr, EcTable table)
 {
-  GameServerEntitiesInfoCursor* self = ptr;
+  //GameServerEntitiesInfoCursor* self = ptr;
   
   eclogger_msg (LL_TRACE, "GAME_S", "cursor", "destroy and clean cursor");
 

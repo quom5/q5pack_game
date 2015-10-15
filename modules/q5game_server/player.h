@@ -2,6 +2,7 @@
 #define GAMESERVER_PLAYER_H 1
 
 #include "entities.h"
+#include "frames.h"
 
 #include <system/macros.h>
 #include <tools/ecasyncvc.h>
@@ -14,7 +15,7 @@ __LIB_EXPORT GameServerPlayer gs_player_create (GameServerEntities entities, ENe
 
 __LIB_EXPORT void gs_player_destroy (GameServerPlayer*);
 
-__LIB_EXPORT void gs_player_message (GameServerPlayer, ENetPeer*, EcBuffer, int channel);
+__LIB_EXPORT void gs_player_message (GameServerPlayer, ENetPeer*, GameServerFrame*, int channel);
 
 __LIB_EXPORT void gs_player_sendInfo (GameServerPlayer, GameServerRealm, ENetPeer* peer);
 
