@@ -16,6 +16,10 @@
 // enet includes
 #include <enet/enet.h>
 
+// project includes
+#include "player.h"
+#include "frames.h"
+
 static int _STDCALL module_thread_run (void* ptr);
 
 namespace {
@@ -204,7 +208,7 @@ namespace {
       
       ecudc_add_asString (player, "Name", name);
       
-      sendNode ("02", player);
+      sendNode (C_COMMAND_PLAYER, C_MSG_AUTHENTICATE, player, TRUE);
       
       ecudc_destroy(&player);
     }
@@ -217,7 +221,7 @@ namespace {
 
       ecudc_add_asString (player, "Realm", "the shire");
 
-      sendNode ("03", player);
+      sendNode (C_COMMAND_PLAYER, C_MSG_JOIN_REALM, player, TRUE);
       
       ecudc_destroy(&player);      
     }
@@ -228,7 +232,7 @@ namespace {
     {      
       EcUdc player = ecudc_create(ENTC_UDC_NODE, NULL);
       
-      sendNode ("04", player);
+      sendNode (C_COMMAND_PLAYER, C_MSG_LEAVE_REALM, player, TRUE);
       
       ecudc_destroy(&player); 
       
@@ -268,15 +272,13 @@ namespace {
     
     //------------------------------------------------------------------------------------------------
     
-    void handleMessage (EcBuffer buf)
+    void handleMessage (GameServerFrame* frame)
     {
-      if (buf->size > 1)
-      {
-        switch (buf->buffer [0])
+        switch (frame->ch1)
         {
           case '0':
           {
-            switch (buf->buffer [1])
+            switch (frame->ch2)
             {
               case '1': // disconnect
               {
@@ -285,7 +287,7 @@ namespace {
               break;
               case '2': // authenticated
               {
-                setAuthenticated ((const char*)buf->buffer + 2, buf->size -2);
+                setAuthenticated (frame->content);
               }
               break;
             }
@@ -293,37 +295,36 @@ namespace {
           break;
           case '1':
           {
-            switch (buf->buffer [1])
+            switch (frame->ch2)
             {
               case '3': // new player showed off
               {
-                newPlayer ((const char*)buf->buffer + 2, buf->size - 2);
+                newPlayer (frame->content);
               }
               break;
               case '4': // player left
               {
-                clearPlayer ((const char*)buf->buffer + 2, buf->size - 2);
+                clearPlayer (frame->content);
               }
               break;
               case '5': // player left
               {
-                spawnPlayer ((const char*)buf->buffer + 2, buf->size - 2);
+                spawnPlayer (frame->content);
               }
               break;
               case '6': // player left
               {
-                unspawnPlayer ((const char*)buf->buffer + 2, buf->size - 2);
+                unspawnPlayer (frame->content);
               }
               break;
               case '7': // set player position
               {
-                setPlayerPosition ((const char*)buf->buffer + 2, buf->size - 2);
+                setPlayerPosition (frame->content);
               }
               break;
             }
           }
           break;
-        }
       }
     }
     
@@ -333,15 +334,9 @@ namespace {
     
     //------------------------------------------------------------------------------------------------
     
-    void sendNode (const EcString command, EcUdc node)
+    void sendNode (ubyte_t ch1, ubyte_t ch2, EcUdc node, int reliable)
     {
-      EcBuffer bins = ecbins_write(node, command);
-
-      ENetPacket * packet = enet_packet_create (bins->buffer, bins->size, 0);
-      
-      enet_peer_send	(m_peer, 0, packet);
-      
-      ecbuf_destroy(&bins);
+      gs_frames_send (m_peer, ch1, ch2, node, reliable);      
     }
     
     //------------------------------------------------------------------------------------------------
@@ -351,7 +346,7 @@ namespace {
       ecudc_setUInt32 (m_posXNode, m_posX);
       ecudc_setUInt32 (m_posYNode, m_posY);
       
-      sendNode ("07", m_player);
+      sendNode (C_COMMAND_PLAYER, C_MSG_POSITION, m_player, FALSE);
     }
     
     //------------------------------------------------------------------------------------------------
@@ -373,12 +368,8 @@ namespace {
     
     //------------------------------------------------------------------------------------------------
     
-    void setAuthenticated (const char* buffer, ulong_t len)
+    void setAuthenticated (EcUdc node)
     {
-      EcBuffer_s posbuf = { (unsigned char*)buffer, len };
-
-      EcUdc node = ecbins_read (&posbuf, NULL);
-      
       // get the own id
       m_id = ecudc_get_asUInt32(node, "Id", 0);
 
@@ -401,12 +392,8 @@ namespace {
     
     //------------------------------------------------------------------------------------------------
 
-    void newPlayer (const char* buffer, ulong_t len)
+    void newPlayer (EcUdc node)
     {
-      EcBuffer_s posbuf = { (unsigned char*)buffer, len };
-
-      EcUdc node = ecbins_read (&posbuf, NULL);
-      
       int id = ecudc_get_asUInt32(node, "Id", 0);
       if (id == m_id)
       {
@@ -428,14 +415,10 @@ namespace {
     
     //------------------------------------------------------------------------------------------------
     
-    void clearPlayer (const char* buffer, ulong_t len)
+    void clearPlayer (EcUdc node)
     {
       if (m_win)
       {
-        EcBuffer_s posbuf = { (unsigned char*)buffer, len };
-
-        EcUdc node = ecbins_read(&posbuf, NULL);
-        
         int id = ecudc_get_asUInt32(node, "Id", 0);
         if (id > 0 && id != m_id)
         {
@@ -451,14 +434,10 @@ namespace {
 
     //------------------------------------------------------------------------------------------------
     
-    void spawnPlayer (const char* buffer, ulong_t len)
+    void spawnPlayer (EcUdc node)
     {
       if (m_win)
       {
-        EcBuffer_s posbuf = { (unsigned char*)buffer, len };
-
-        EcUdc node = ecbins_read(&posbuf, NULL);
-        
         int id = ecudc_get_asUInt32(node, "Id", 0);
         if (id == m_id)
         {
@@ -491,14 +470,10 @@ namespace {
     
     //------------------------------------------------------------------------------------------------
     
-    void unspawnPlayer (const char* buffer, ulong_t len)
+    void unspawnPlayer (EcUdc node)
     {
       if (m_win)
       {
-        EcBuffer_s posbuf = { (unsigned char*)buffer, len };
-
-        EcUdc node = ecbins_read(&posbuf, NULL);
-        
         int id = ecudc_get_asUInt32(node, "Id", 0);
         if (id == m_id)
         {
@@ -517,14 +492,10 @@ namespace {
 
     //------------------------------------------------------------------------------------------------
     
-    void setPlayerPosition (const char* buffer, ulong_t len)
+    void setPlayerPosition (EcUdc node)
     {
       if (m_win)
       {
-        EcBuffer_s posbuf = { (unsigned char*)buffer, len };
-
-        EcUdc node = ecbins_read(&posbuf, NULL);
-        
         int id = ecudc_get_asUInt32(node, "Id", 0);
         if (id > 0 && id != m_id)
         {
@@ -658,7 +629,15 @@ namespace {
           {
             EcBuffer_s buf = { event.packet->data, event.packet->dataLength };
            
-            m_gc->handleMessage(&buf);
+            GameServerFrameCursor cursor;
+            GameServerFrame frame;
+            
+            gs_frames_init (&buf, &cursor);
+            
+            while (gs_frames_next (&cursor, &frame))
+            {
+              m_gc->handleMessage(&frame);
+            }
             
             enet_packet_destroy (event.packet);
           }

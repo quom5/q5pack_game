@@ -14,7 +14,7 @@ __LIB_EXPORT GameServerRealm gs_realm_create (ENetHost* enetHost, uint32_t gameE
 
 __LIB_EXPORT void gs_realm_destroy (GameServerRealm*);
 
-__LIB_EXPORT void gs_realm_broadcast (GameServerRealm, const EcString command, EcUdc node, int reliable);
+__LIB_EXPORT void gs_realm_broadcast (GameServerRealm, ubyte_t ch1, ubyte_t ch2, EcUdc node, int reliable);
 
 __LIB_EXPORT const EcString gs_realm_name (GameServerRealm);
 

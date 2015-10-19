@@ -57,24 +57,9 @@ void gs_realm_destroy (GameServerRealm* pself)
 
 //-------------------------------------------------------------------------------------
 
-void gs_realm_broadcast (GameServerRealm self, const EcString command, EcUdc node, int reliable)
+void gs_realm_broadcast (GameServerRealm self, ubyte_t ch1, ubyte_t ch2, EcUdc node, int reliable)
 {
-  if (node)
-  {
-    EcBuffer bins = ecbins_write(node, command);
-    
-    ENetPacket * packet = enet_packet_create (bins->buffer, bins->size, reliable ? ENET_PACKET_FLAG_RELIABLE : 0);
-    
-    enet_host_broadcast	(self->host, 0, packet);
-    
-    ecbuf_destroy(&bins);
-  }
-  else
-  {
-    ENetPacket * packet = enet_packet_create (command, 2, 0);
-    
-    enet_host_broadcast	(self->host, 0, packet);    
-  }
+  gs_frames_broadcast (self->host, ch1, ch2, node, reliable);
 }
 
 //-------------------------------------------------------------------------------------

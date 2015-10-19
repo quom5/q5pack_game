@@ -40,7 +40,7 @@ IF( CURSES_LIBRARY )
 
   include_directories(${CURSES_INCLUDE_DIR})
 
-  ADD_EXECUTABLE( q5game_client q5game_client.cpp )
+  ADD_EXECUTABLE( q5game_client frames.c q5game_client.cpp )
   TARGET_LINK_LIBRARIES( q5game_client ${ENTC_LIBRARIES} ${CURSES_LIBRARIES} enet) 
 
 ENDIF( CURSES_LIBRARY )

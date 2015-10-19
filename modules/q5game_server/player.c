@@ -7,6 +7,8 @@
 #include <tools/ecbins.h>
 #include <types/ecudc.h>
 
+//-------------------------------------------------------------------------------------
+
 struct GameServerPlayer_s
 {
   
@@ -56,19 +58,6 @@ GameServerPlayer gs_player_create (GameServerEntities entities, ENetPeer* peer)
 
 //-------------------------------------------------------------------------------------
 
-void gs_player_send (ENetPeer* peer, const EcString command, EcUdc node, int reliable)
-{
-  EcBuffer bins = ecbins_write (node, command);
-  
-  ENetPacket * packet = enet_packet_create (bins->buffer, bins->size, reliable ? ENET_PACKET_FLAG_RELIABLE : 0);
-  
-  enet_peer_send (peer, 0, packet);
-  
-  ecbuf_destroy(&bins);
-}
-
-//-------------------------------------------------------------------------------------------
-
 void gs_player_leaveRealm (GameServerPlayer self)
 {
   EcUdc node;
@@ -85,7 +74,8 @@ void gs_player_leaveRealm (GameServerPlayer self)
   // add user id to node
   ecudc_add_asUInt32(node, "Id", self->playerNo);
   
-  gs_realm_broadcast (self->realm, "14", node, TRUE);  // inform other players
+  gs_realm_broadcast (self->realm, C_COMMAND_BROADCAST, C_MSG_LEAVE_REALM, node, TRUE);  
+  // inform other players
   
   self->realm = NULL;
   self->spawned = FALSE;
@@ -108,7 +98,7 @@ void gs_player_disconnect (GameServerPlayer self, ENetPeer* peer)
   
   eclogger_fmt (LL_TRACE, "GAME_S", "recv", "player disconnected '%s'", self->name);  
   
-  gs_player_send (self->peer, "01", node, TRUE);
+  gs_frames_send (self->peer, C_COMMAND_PLAYER, C_MSG_DISCONNECT, node, TRUE);
   
   ecudc_destroy(&node);  
 }
@@ -141,7 +131,7 @@ void gs_player_authenticate (GameServerPlayer self, ENetPeer* peer, GameServerFr
   
   ecudc_add_asUInt32(frame->content, "Id", self->playerNo);
 
-  gs_player_send (self->peer, "02", frame->content, TRUE);
+  gs_frames_send (self->peer, C_COMMAND_PLAYER, C_MSG_AUTHENTICATE, frame->content, TRUE);
 }
 
 //-------------------------------------------------------------------------------------------
@@ -170,7 +160,7 @@ void gs_player_spawn (GameServerPlayer self)
   ecudc_add_asUInt32(node, "PosY", self->posY);
   ecudc_add_asUInt32(node, "PosZ", self->posZ);
   
-  gs_realm_broadcast (self->realm, "15", node, TRUE);
+  gs_realm_broadcast (self->realm, C_COMMAND_BROADCAST, C_MSG_SPAWN, node, TRUE);
   
   ecudc_destroy(&node);  
   
@@ -198,7 +188,8 @@ void gs_player_joinRealm (GameServerPlayer self, ENetPeer* peer, GameServerFrame
   ecudc_add_asUInt32(frame->content, "Id", self->playerNo);
   ecudc_add_asString(frame->content, "Name", self->name);
 
-  gs_realm_broadcast (self->realm, "13", frame->content, TRUE);  // inform all
+  gs_realm_broadcast (self->realm, C_COMMAND_BROADCAST, C_MSG_JOIN_REALM, frame->content, TRUE);
+  // inform all
   
   gs_player_spawn (self);
 }
@@ -225,7 +216,7 @@ void gs_player_unspawn (GameServerPlayer self)
   
   ecudc_add_asUInt32(node, "Id", self->playerNo);
   
-  gs_realm_broadcast (self->realm, "16", node, TRUE);
+  gs_realm_broadcast (self->realm, C_COMMAND_BROADCAST, C_MSG_UNSPAWN, node, TRUE);
   
   ecudc_destroy(&node);
   
@@ -254,7 +245,7 @@ void gs_player_position (GameServerPlayer self, GameServerFrame* frame)
   
   ecudc_add_asUInt32(frame->content, "Id", self->playerNo);
   
-  gs_realm_broadcast (self->realm, "17", frame->content, FALSE);
+  gs_realm_broadcast (self->realm, C_COMMAND_BROADCAST, C_MSG_POSITION, frame->content, FALSE);
 }
 
 //-------------------------------------------------------------------------------------
@@ -263,37 +254,37 @@ int gs_player_basic_commands (GameServerPlayer player, ENetPeer* peer, GameServe
 {
   switch (frame->ch2)
   {
-    case '1':  // leave server / disconnect
+    case C_MSG_DISCONNECT:  // leave server / disconnect
     {
       gs_player_disconnect (player, peer);
     }
     break;
-    case '2':  // authenticate
+    case C_MSG_AUTHENTICATE:  // authenticate
     {
       gs_player_authenticate (player, peer, frame);
     }
     break;
-    case '3':  // join realm
+    case C_MSG_JOIN_REALM:  // join realm
     {
       gs_player_joinRealm (player, peer, frame);
     }
     break;
-    case '4':  // leave realm
+    case C_MSG_LEAVE_REALM: // leave realm
     {
       gs_player_leaveRealm (player);
     }
     break;
-    case '5':  // spawn 
+    case C_MSG_SPAWN:       // spawn 
     {
       gs_player_spawn (player);
     }
     break;
-    case '6':  // unspawn
+    case C_MSG_UNSPAWN:     // unspawn
     {
       gs_player_unspawn (player);      
     }
     break;
-    case '7':  // new player position
+    case C_MSG_POSITION:    // new player position
     {
       gs_player_position (player, frame);              
     }
@@ -323,12 +314,12 @@ void gs_player_request_commands (GameServerPlayer player, ENetPeer* peer, GameSe
 {
   switch (frame->ch2)
   {
-    case '1':  // request list of all realms 
+    case C_MSG_LISTREALMS:  // request list of all realms 
     {
       gs_player_reqPlayers (player, peer);
     }
     break;
-    case '2':  // request list of all players withina realm 
+    case C_MSG_PLAYERS:  // request list of all players within a realm 
     {
       gs_player_reqPlayers (player, peer);
     }
@@ -344,11 +335,11 @@ void gs_player_message (GameServerPlayer self, ENetPeer* peer, GameServerFrame* 
   {
     switch (frame->ch1)
     {
-      case '0':  // basic commands
+      case C_COMMAND_PLAYER:  // basic commands
       {
         gs_player_basic_commands (self, peer, frame);
       }
-      case '2':  // request commands
+      case C_COMMAND_REQUEST:  // request commands
       {
         gs_player_request_commands (self, peer, frame);
       }
@@ -373,8 +364,9 @@ void gs_player_sendInfo (GameServerPlayer self, GameServerRealm realm, ENetPeer*
     ecudc_add_asUInt32(node, "PosZ", self->posZ);
     
     eclogger_fmt (LL_TRACE, "GAME_S", "request", "send player '%s'", self->name);
-    
-    gs_player_send (peer, "13", node, TRUE);  // send new player
+
+    // send new player, simulate broadcast message
+    gs_frames_send (peer, C_COMMAND_BROADCAST, C_MSG_JOIN_REALM, node, TRUE);
     
     ecudc_destroy(&node);      
   }

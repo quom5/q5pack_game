@@ -9,6 +9,25 @@
 
 #include "enet/enet.h"
 
+//-------------------------------------------------------------------------------------
+
+#define C_COMMAND_PLAYER      '0'
+#define C_COMMAND_BROADCAST   '1'
+#define C_COMMAND_REQUEST     '2'
+
+#define C_MSG_DISCONNECT      '1'
+#define C_MSG_AUTHENTICATE    '2'
+#define C_MSG_JOIN_REALM      '3'
+#define C_MSG_LEAVE_REALM     '4'
+#define C_MSG_SPAWN           '5'
+#define C_MSG_UNSPAWN         '6'
+#define C_MSG_POSITION        '7'
+
+#define C_MSG_LISTREALMS      '1'
+#define C_MSG_PLAYERS         '2'
+
+//-------------------------------------------------------------------------------------
+
 __CPP_EXTERN______________________________________________________________________________START
 
 __LIB_EXPORT GameServerPlayer gs_player_create (GameServerEntities entities, ENetPeer* peer);
