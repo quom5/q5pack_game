@@ -23,10 +23,14 @@ int gs_frames_next (GameServerFrameCursor* cursor, GameServerFrame* frame)
   if (cursor->pos == 0)
   {
     const unsigned char* posbuf = cursor->orig->buffer + cursor->pos;
-    
+   
     frame->ch1 = posbuf [0];
     frame->ch2 = posbuf [1];
 
+    eclogger_fmt (LL_TRACE, "GAME_S", "frame", "received %i bytes [%i|%i]", cursor->orig->size, frame->ch1, frame->ch2);  
+    
+    
+    /*
     if (posbuf [2] & C_BUFFER_SIZE_BIG)
     {
       EcBuffer_s buf = { cursor->orig->buffer + 8, cursor->orig->size - 8 };
@@ -45,7 +49,14 @@ int gs_frames_next (GameServerFrameCursor* cursor, GameServerFrame* frame)
       
       frame->content = ecbins_read(&buf, NULL);      
     }
+     */
+
+    {
+      EcBuffer_s buf = { cursor->orig->buffer + 2, cursor->orig->size - 2 };      
       
+      frame->content = ecbins_read(&buf, NULL);      
+    }
+    
     cursor->pos = 1;
     
     return TRUE;
@@ -66,6 +77,24 @@ int gs_frames_next (GameServerFrameCursor* cursor, GameServerFrame* frame)
 ENetPacket* gs_frame_createPacket (ubyte_t ch1, ubyte_t ch2, EcUdc node, int reliable)
 {
   ENetPacket* packet;
+  
+  unsigned char chh [2] = {ch1, ch2};
+  EcBuffer_s h = {chh, 2};
+
+  if (isAssigned (node))
+  {
+    EcBuffer bins = ecbins_write (node, &h);
+
+    packet = enet_packet_create (bins->buffer, bins->size, reliable ? ENET_PACKET_FLAG_RELIABLE : 0);    
+    
+    ecbuf_destroy(&bins);
+  }
+  else
+  {
+    packet = enet_packet_create (chh, 2, reliable ? ENET_PACKET_FLAG_RELIABLE : 0);    
+  }
+  
+  /*
   
   unsigned char chh [8] = {ch1, ch2, 0, 0, 0, 0, 0, 0};
   EcBuffer_s h = {chh, 8};
@@ -125,6 +154,8 @@ ENetPacket* gs_frame_createPacket (ubyte_t ch1, ubyte_t ch2, EcUdc node, int rel
     
     packet = enet_packet_create (chh, 5, reliable ? ENET_PACKET_FLAG_RELIABLE : 0);
   }
+   
+   */
   
   return packet;
 }

@@ -15,6 +15,7 @@
 #define C_COMMAND_BROADCAST   '1'
 #define C_COMMAND_REQUEST     '2'
 
+#define C_MSG_TEST            '0'
 #define C_MSG_DISCONNECT      '1'
 #define C_MSG_AUTHENTICATE    '2'
 #define C_MSG_JOIN_REALM      '3'

@@ -85,6 +85,17 @@ void gs_player_leaveRealm (GameServerPlayer self)
 
 //-------------------------------------------------------------------------------------------
 
+void gs_player_test (GameServerPlayer self, ENetPeer* peer, GameServerFrame* frame)
+{
+  EcString json = ecjson_write(frame->content);
+  
+  eclogger_fmt (LL_TRACE, "GAME_S", "test", json);
+  
+  ecstr_delete(&json);
+}
+
+//-------------------------------------------------------------------------------------------
+
 void gs_player_disconnect (GameServerPlayer self, ENetPeer* peer)
 {
   EcUdc node;
@@ -254,6 +265,11 @@ int gs_player_basic_commands (GameServerPlayer player, ENetPeer* peer, GameServe
 {
   switch (frame->ch2)
   {
+    case C_MSG_TEST:        // all types were send from client
+    {
+      gs_player_test (player, peer, frame);
+    }
+    break;
     case C_MSG_DISCONNECT:  // leave server / disconnect
     {
       gs_player_disconnect (player, peer);

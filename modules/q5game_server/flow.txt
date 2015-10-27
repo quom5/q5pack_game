@@ -1,0 +1,68 @@
+flow
+
+
+client							server
+
+verbindet						--- (vlt spaeter)
+
+[authentication]				-> checked db / username / password
+(username + password)			-> [enter lobby]
+								(userid, liste {id(int):name}, liste games {name:{extra info}} )
+
+[enter game]					-> check game
+(gamename)						-> [join game]
+								(playerid, name, liste {id(int):name}, liste teams {id:name})
+
+								-> [error]
+								(reason:string)
+								
+/ optional
+[get level]						-> [send level]
+(gamename)						(size)
+								(packet  1-10)
+								(packet 11-20)
+								
+								-> [send objects]
+								
+								
+								
+[spawn]							-> [spawn]
+(team id)						(player id, team id)
+								
+								-> [player update]
+								(player id, map{name:value})
+
+
+[unspawn]						-> [unspawn]
+								(player id)
+								
+
+/ unreliable
+[position]
+(vec3)							-> [position]
+								(player id, vec3)
+
+[shoot] (reliable)
+(vec3,vec3)						-> [shoot]
+								(player id, vec3, vec3, obj type)
+								
+								-> [spawn animation]
+								(obj id, vec3, int(type id), int(time/ms))
+
+								-> [unspawn animation]
+								(obj id)
+
+[set block] (reliable)
+[vec3, block id]				-> [set block]
+								(vec3, block id, status, health)
+								
+[activate]
+[block id]						
+
+
+								
+															
+
+								
+
+
